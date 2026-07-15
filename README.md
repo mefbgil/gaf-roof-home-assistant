@@ -10,6 +10,9 @@ every five minutes by default.
 > change or remove the API without notice. This project is not affiliated with
 > or endorsed by GAF.
 
+The GAF name and logo are trademarks of GAF Materials LLC. The integration
+icon is derived from the logo displayed on GAF's official residential website.
+
 ## Install with HACS
 
 1. Open HACS in Home Assistant.
