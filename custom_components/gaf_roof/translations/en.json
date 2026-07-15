@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to GAF Roof",
+        "description": "Enter the credentials used by the GAF cloud service.",
+        "data": {"username": "Username", "password": "Password"}
+      },
+      "reauth_confirm": {
+        "title": "Reconnect GAF Roof",
+        "description": "The GAF credentials are no longer accepted.",
+        "data": {"username": "Username", "password": "Password"}
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the GAF service",
+      "invalid_auth": "Invalid username or password"
+    },
+    "abort": {
+      "already_configured": "GAF Roof is already configured",
+      "reauth_successful": "GAF Roof was reconnected successfully"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "GAF Roof options",
+        "data": {"poll_interval": "Polling interval (seconds)"}
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {"name": "Temperature"},
+      "humidity": {"name": "Humidity"},
+      "signal": {"name": "Signal"}
+    }
+  }
+}

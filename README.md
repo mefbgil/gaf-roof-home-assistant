@@ -1,0 +1,58 @@
+# GAF Roof for Home Assistant
+
+This integration replaces the scheduled `gaf_device_fetcher.py` shell command
+and MQTT discovery bridge with native Home Assistant devices and sensors. It
+uses one coordinated asynchronous cloud request for every GAF device and polls
+every five minutes by default.
+
+> [!IMPORTANT]
+> This project uses an undocumented private GAF/Keen Home cloud API. GAF can
+> change or remove the API without notice. This project is not affiliated with
+> or endorsed by GAF.
+
+## Install with HACS
+
+1. Open HACS in Home Assistant.
+2. Open the menu and select **Custom repositories**.
+3. Add `https://github.com/mefbgil/gaf-roof-home-assistant` as an **Integration**.
+4. Find **GAF Roof** in HACS and install it.
+5. Restart Home Assistant.
+6. Open **Settings → Devices & services → Add integration** and search for
+   **GAF Roof**.
+
+## Manual installation
+
+1. Copy `custom_components/gaf_roof` into Home Assistant's `/config/custom_components` directory.
+2. Restart Home Assistant.
+3. Open **Settings → Devices & services → Add integration**.
+4. Search for **GAF Roof** and enter the GAF cloud username and unencoded password.
+5. The default polling interval is 300 seconds. Change it from the integration's **Configure** menu if necessary.
+
+## Entities
+
+Each GAF device exposes native temperature and humidity measurement sensors.
+The signal sensor is created disabled by default and can be enabled from the
+device page.
+
+Credentials are stored as a Home Assistant config entry and are redacted from
+downloadable diagnostics. If authentication expires or is revoked, Home
+Assistant starts a reauthentication flow.
+
+## Migration from the MQTT bridge
+
+1. Install and configure this integration while the old bridge remains available.
+2. Confirm the new native sensors update successfully.
+3. Update automations and dashboards if Home Assistant gives the new sensors an `_2` suffix.
+4. Remove the retained legacy MQTT discovery topics or delete the old MQTT device from Home Assistant.
+5. Remove `packages/gaf.yaml` (or disable its automation) and stop using `scripts/gaf_device_fetcher.py`.
+6. Restart Home Assistant and verify the native entities update after at least one polling interval.
+
+The API used by this integration is an undocumented private cloud API and may
+change without notice. Credentials are stored in Home Assistant's config entry
+storage and are redacted from downloadable diagnostics.
+
+## Support
+
+Please use the [GitHub issue tracker](https://github.com/mefbgil/gaf-roof-home-assistant/issues)
+and attach the integration's redacted diagnostics when possible. Never post
+passwords, authentication tokens, or unredacted Home Assistant configuration.
