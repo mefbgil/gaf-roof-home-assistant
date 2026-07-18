@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import logging
 from typing import Any
 
 from aiohttp import ClientError, ClientResponseError, ClientSession, ClientTimeout
 
-from .const import DEVICE_LIST_URL, LOGIN_URL, REQUEST_TIMEOUT, USER_POOL_ID, USER_ROLE
+from .const import (
+    DEVICE_LIST_URL,
+    LOGIN_URL,
+    REQUEST_MAX_ATTEMPTS,
+    REQUEST_RETRY_BASE_DELAY,
+    REQUEST_TIMEOUT,
+    USER_POOL_ID,
+    USER_ROLE,
+)
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class GafApiError(Exception):
@@ -20,6 +32,10 @@ class GafAuthenticationError(GafApiError):
 
 class GafConnectionError(GafApiError):
     """The GAF service could not be reached or returned invalid data."""
+
+    def __init__(self, message: str, *, retryable: bool = True) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 class GafApiClient:
@@ -61,16 +77,36 @@ class GafApiClient:
         self._access_token = token
 
     async def async_get_devices(self) -> list[dict[str, Any]]:
-        """Return the current GAF device list, refreshing auth once on 401."""
+        """Return devices, retrying transient failures with exponential backoff."""
         if self._access_token is None:
             await self.async_authenticate()
 
-        try:
-            return await self._async_request_devices()
-        except GafAuthenticationError:
-            self._access_token = None
-            await self.async_authenticate()
-            return await self._async_request_devices()
+        auth_refreshed = False
+        attempt = 1
+        while True:
+            try:
+                return await self._async_request_devices()
+            except GafAuthenticationError:
+                if auth_refreshed:
+                    raise
+                self._access_token = None
+                await self.async_authenticate()
+                auth_refreshed = True
+            except GafConnectionError as err:
+                if not err.retryable or attempt >= REQUEST_MAX_ATTEMPTS:
+                    raise
+
+                delay = REQUEST_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                _LOGGER.warning(
+                    "Transient GAF device request failure (%s); retrying in %.1f "
+                    "seconds (attempt %d/%d)",
+                    err,
+                    delay,
+                    attempt + 1,
+                    REQUEST_MAX_ATTEMPTS,
+                )
+                await asyncio.sleep(delay)
+                attempt += 1
 
     async def _async_request_devices(self) -> list[dict[str, Any]]:
         try:
@@ -87,12 +123,13 @@ class GafApiClient:
             raise
         except ClientResponseError as err:
             raise GafConnectionError(
-                f"GAF returned HTTP status {err.status}"
+                f"GAF returned HTTP status {err.status}",
+                retryable=err.status == 429 or err.status >= 500,
             ) from err
         except (ClientError, TimeoutError, ValueError) as err:
             raise GafConnectionError("Unable to fetch GAF devices") from err
 
-        devices = result.get("responseData")
+        devices = result.get("responseData") if isinstance(result, dict) else None
         if not isinstance(devices, list):
             raise GafConnectionError("GAF returned an unexpected device response")
         return [device for device in devices if isinstance(device, dict)]

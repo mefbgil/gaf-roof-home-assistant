@@ -15,6 +15,8 @@ DEVICE_LIST_URL = "https://gaf.keenhome.io/gaf/device/deviceList"
 USER_POOL_ID = "us-east-2_F6aHzg32w"
 USER_ROLE = "contractor"
 REQUEST_TIMEOUT = 15
+REQUEST_MAX_ATTEMPTS = 3
+REQUEST_RETRY_BASE_DELAY = 1.0
 
 
 def update_interval(seconds: int) -> timedelta:
